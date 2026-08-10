@@ -9,6 +9,9 @@ from google.genai import types
 
 load_dotenv()
 
+os.environ["HTTP_PROXY"] = "socks5://127.0.0.1:10808"
+os.environ["HTTPS_PROXY"] = "socks5://127.0.0.1:10808"
+
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 TARGET_USER_ID = int(os.getenv("TARGET_USER_ID", 0))
