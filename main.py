@@ -20,26 +20,21 @@ TARGET_USER_IDS = [
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
-
 groq_client = Groq(api_key=GROQ_API_KEY)
 
 SYSTEM_PROMPT = """
-Ты — гиперагрессивный, циничный и остроумный пацан в групповом чате с корешами.
-Твоя единственная цель — максимально ЖЕСТКО, ДЕРЗКО и БЕЗЖАЛОСТНО прожарить автора за присланный видео-кружок (video note).
-Ты искренне презираешь кружки и считаешь их высшим проявлением лени, нарциссизма и неуважения к чату.
+Ты — токсичный, заборный и максимально язвительный тип в пацанском чате.
+Твоя цель — унизить и прожарить автора за присланный видео-кружок (video note). 
+Ты искренне презираешь кружки и считаешь их высером ленивого блогера.
 
-Твой стиль и характер:
-1. НИКАКОЙ ВЕЖЛИВОСТИ. Забудь про "привет", "братан", "без обид". Сразу бей по больному.
-2. ЖЕСТКАЯ ИРОНИЯ И САРКАЗМ. Высмеивай актера года: как он смотрит в камеру, как сопит, как держит телефон, его выражение лица и тупость самой идеи записывать видео ради двух слов.
-3. ПАЦАНСКИЙ СЛЕНГ. Используй живую лексику (рофл, база, кринж, влогер, оператор года, забей, чушпан, режим блогера, не позорься, клавиатуру купи).
-4. ТРЕБОВАНИЕ. В конце каждого ответа жестко потребуй/намекни писать ТЕКСТОМ, а не устраивать тут свои прямой эфир.
+ИНСТРУКЦИЯ К БОЮ:
+1. Тебе даны: ИМЯ, ДЛИТЕЛЬНОСТЬ (сек) и ТОЧНАЯ РАСШИФРОВКА ТОГО, ЧТО ОН СКАЗАЛ.
+2. ЖЕСТКО Привязывайся к его словам! Высмеивай тупость мысли, эканье, задевай суть того, что он ляпнул.
+3. Если он молчал или мямлил — уничтожай за то, что ради этого он включал камеру.
+4. Используй жесткий пацанский сленг, мат, сарказм и иронию. Никакой цензуры и занудства. Бей по больному, но так, чтобы весь чат угарал.
+5. В конце ЖЕСТКО потребуй писать ТЕКСТОМ и освоить клавиатуру.
 
-Примеры идеальной прожарки:
-- "О, оператор года проснулся. 20 секунд сопения в микрофон и съёмки своего заплывшего подбородка снизу вверх, чтобы сказать 'ну че вы'? Пальцы отсохли текстом набрать? Не позорься, выключи камеру и купи клавиатуру."
-- "Ты 15 секунд молча смотрел в объектив с лицом контуженной лягушки. Мы тут твоей физиономией любоваться должны или чё? Снимись с ручника, закрывай свой влог и пиши буквами."
-- "Спасибо за 30 секунд кинематографичного потолка и эканья. Очень важная трансляция, бро, весь чат в слезах. Слейся с эфира и освой наконец текстовые сообщения."
-
-Формат: 2-3 коротких, но максимально убойных и хлестких предложения. Никакой цензуры по смыслу, но без банальной тупой ругани — прожар должен быть именно СМЕШНЫМ и ОСТРЫМ.
+ФОРМАТ: 2-3 коротких, но предельно злых и убойных предложения. Без приветствий и вежливости.
 """
 
 @dp.message(F.video_note)
@@ -50,36 +45,73 @@ async def handle_circle(message: Message):
         if not (is_author or is_forwarded):
             return
 
-    processing_msg = await message.reply("👀 *Анализирую этот шедевр кинематографа...*", parse_mode="Markdown")
+    processing_msg = await message.reply("👀 *Слушаю этот бред...*", parse_mode="Markdown")
+    file_path = f"circle_{message.message_id}.mp4"
 
     try:
+        # 1. Скачиваем кружок
+        tg_file = await bot.get_file(message.video_note.file_id)
+        await bot.download_file(tg_file.file_path, file_path)
+
         user_name = message.from_user.first_name or "Тип"
+        duration = message.video_note.duration
+
+        # 2. Расшифровываем голос через Groq Whisper (бесплатно и за 0.3 сек)
+        transcript_text = ""
+        try:
+            with open(file_path, "rb") as file:
+                transcription = await asyncio.to_thread(
+                    groq_client.audio.transcriptions.create,
+                    file=(file_path, file.read()),
+                    model="whisper-large-v3-turbo",
+                    language="ru",
+                    response_format="text"
+                )
+                transcript_text = str(transcription).strip()
+        except Exception as transcript_err:
+            print(f"Whisper error: {transcript_err}")
+            transcript_text = "[Не удалось распознать речь / молчание в камеру]"
+
+        if not transcript_text:
+            transcript_text = "[Абсолютное молчание или мычание]"
+
+        # 3. Генерируем персональный прожар
+        user_prompt = (
+            f"Автор: {user_name}\n"
+            f"Длительность кружка: {duration} секунд\n"
+            f"Расшифровка сказанного в кружке: \"{transcript_text}\"\n\n"
+            f"Уничтожь его за этот кружок и за то, что он там сказал!"
+        )
+
         response = await asyncio.to_thread(
             groq_client.chat.completions.create,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": f"Пользователь {user_name} только что отправил видео-кружок в чат. Прожарь его за это!"}
+                {"role": "user", "content": user_prompt}
             ],
             model="llama-3.3-70b-versatile",
             temperature=0.9,
-            max_tokens=250,
+            max_tokens=150,  # Экономия токенов
         )
 
-        reply_text = response.choices[0].message.content or "Даже сказать нечего, насколько это бесполезный кружок."
+        reply_text = response.choices[0].message.content or "Даже сказать нечего на этот высер."
         await message.reply(reply_text)
 
     except Exception as e:
-        print(f"Error calling Groq API: {e}")
-        await message.reply("Даже нейросеть офигела от этого кружка и выдала ошибку.")
+        print(f"Error handling video note: {e}")
+        await message.reply("Даже нейросеть офигела от этого кружка.")
 
     finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
         try:
             await processing_msg.delete()
         except Exception:
             pass
 
 async def main():
-    print("Бот запущен на Groq!")
+    print("Бот запущен с Whisper + Llama 3.3!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
