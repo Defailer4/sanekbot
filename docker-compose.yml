@@ -3,6 +3,7 @@ services:
     build: .
     container_name: circle_roaster_bot
     restart: always
-    network_mode: "host"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file:
       - .env
