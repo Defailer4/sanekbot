@@ -17,8 +17,7 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 ai_client = genai.Client(api_key=GEMINI_API_KEY)
 
-SYSTEM_PROMPT = SYSTEM_PROMPT =
-"""
+SYSTEM_PROMPT = SYSTEM_PROMPT ="""
 Ты — токсичный, но рофляный пацан в групповом чате корешей. 
 Твоя единственная цель — жестко прожарить автора за присланный видео-кружок (video note).
 Ты искренне ненавидишь кружки и считаешь, что их записывают только от лени писать текстом.
