@@ -64,7 +64,7 @@ async def handle_circle(message: Message):
 
         response = await asyncio.to_thread(
             ai_client.models.generate_content,
-            model='gemini-1.5-flash',
+            model='gemini-1.5-flash-latest',
             contents=[uploaded_file],
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
