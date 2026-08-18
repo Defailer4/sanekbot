@@ -30,3 +30,10 @@ def clean_transcript(text: str) -> str:
             return ""
 
     return cleaned
+
+def clean_llm_response(text: str) -> str:
+    if not text:
+        return ""
+    cleaned = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    cleaned = re.sub(r"<think>.*", "", cleaned, flags=re.DOTALL)
+    return cleaned.strip()

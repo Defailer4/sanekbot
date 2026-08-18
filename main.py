@@ -6,9 +6,10 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message
 from groq import Groq
 
+# Импорты
 from config.settings import BOT_TOKEN, GROQ_API_KEY, TARGET_USER_IDS
 from config.prompts import SYSTEM_PROMPT, ROAST_STYLES, MOCKERY_PASTAS
-from utils.cleaners import clean_transcript
+from utils.cleaners import clean_transcript, clean_llm_response
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -64,22 +65,23 @@ async def handle_circle(message: Message):
             f"Расшифровка сказанного: \"{transcript_text}\"\n"
             f"Направление удара: {current_style}\n"
             f"Пример вайба/пасты для вдохновения: \"{sample_pasta}\"\n\n"
-            f"Прожарь автора на русском языке, переняв подачу из примера, но адаптировав под его слова!"
+            f"Прожарь автора на русском языке, переняв подачу из примера, но адаптировав под его слова! Отвечай СРАЗУ готовым текстом прожарки без тегов <think> и рассуждений."
         )
 
         response = await asyncio.to_thread(
             groq_client.chat.completions.create,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": SYSTEM_PROMPT + "\nВАЖНО: Выдавай только финальный текст ответа, не используй блок <think>."},
                 {"role": "user", "content": user_prompt}
             ],
             model="qwen/qwen3.6-27b",
-            temperature=0.85,
+            temperature=0.8,
             top_p=0.9,
-            max_tokens=300,
+            max_tokens=600,
         )
 
-        reply_text = response.choices[0].message.content or "Даже сказать нечего на этот высер."
+        raw_content = response.choices[0].message.content or ""
+        reply_text = clean_llm_response(raw_content) or "Даже сказать нечего на этот высер."
         await message.reply(reply_text)
 
     except Exception as e:
