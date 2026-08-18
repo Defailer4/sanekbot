@@ -73,10 +73,10 @@ async def handle_circle(message: Message):
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt}
             ],
-            model="openai/gpt-oss-120b",
-            temperature=1.2,
-            top_p=0.92,
-            max_tokens=160,
+            model="qwen/qwen3.6-27b",
+            temperature=0.85,
+            top_p=0.9,
+            max_tokens=300,
         )
 
         reply_text = response.choices[0].message.content or "Даже сказать нечего на этот высер."
