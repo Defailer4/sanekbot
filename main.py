@@ -1,10 +1,17 @@
 import os
 import random
 import asyncio
+import logging
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message
 from groq import Groq
+
+# Настройка логирования (чтобы всё сразу летело в stdout)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 from config.settings import BOT_TOKEN, GROQ_API_KEY, TARGET_USER_IDS
 from config.prompts import SYSTEM_PROMPT, ROAST_STYLES, MOCKERY_PASTAS
@@ -47,9 +54,10 @@ async def handle_circle(message: Message):
                 )
                 raw_text = str(transcription).strip()
                 transcript_text = clean_transcript(raw_text)
+                logging.info(f"Транскрипция: {transcript_text}")
 
         except Exception as transcript_err:
-            print(f"Whisper error: {transcript_err}")
+            logging.error(f"Ошибка Whisper: {transcript_err}")
             transcript_text = ""
 
         if not transcript_text:
@@ -76,14 +84,22 @@ async def handle_circle(message: Message):
             model="openai/gpt-oss-20b",
             temperature=0.8,
             top_p=0.9,
-            max_tokens=400,
+            max_tokens=600,
         )
 
-        reply_text = response.choices[0].message.content or "Даже сказать нечего на этот высер."
+        # Вытаскиваем content или рассуждения, если модель вернула текст туда
+        choice_message = response.choices[0].message
+        reply_text = choice_message.content or getattr(choice_message, "reasoning", None) or ""
+
+        logging.info(f"Сырой ответ модели: {choice_message}")
+
+        if not reply_text.strip():
+            reply_text = "Даже сказать нечего на этот высер."
+
         await message.reply(reply_text.strip())
 
     except Exception as e:
-        print(f"Error handling video note: {e}")
+        logging.error(f"Критическая ошибка обработки кружка: {e}", exc_info=True)
         await message.reply("Даже нейросеть офигела от этого кружка.")
 
     finally:
@@ -97,7 +113,7 @@ async def handle_circle(message: Message):
 
 
 async def main():
-    print("Бот запущен!")
+    logging.info("Бот успешно запущен!")
     await dp.start_polling(bot)
 
 
