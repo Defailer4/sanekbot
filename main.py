@@ -78,13 +78,20 @@ async def handle_circle(message: Message):
         response = await asyncio.to_thread(
             groq_client.chat.completions.create,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {
+                    "role": "system",
+                    "content": (
+                        f"{SYSTEM_PROMPT}\n\n"
+                        "CRITICAL: Do NOT output any English thinking process, planning, drafting, or <think> blocks. "
+                        "Output ONLY the final Russian response directly."
+                    )
+                },
                 {"role": "user", "content": user_prompt}
             ],
             model="openai/gpt-oss-20b",
-            temperature=0.8,
+            temperature=0.7,
             top_p=0.9,
-            max_tokens=600,
+            max_tokens=800,
         )
 
         # Вытаскиваем content или рассуждения, если модель вернула текст туда
