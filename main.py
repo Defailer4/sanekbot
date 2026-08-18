@@ -7,7 +7,6 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message
 from groq import Groq
 
-# Настройка логирования (чтобы всё сразу летело в stdout)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
@@ -15,7 +14,7 @@ logging.basicConfig(
 
 from config.settings import BOT_TOKEN, GROQ_API_KEY, TARGET_USER_IDS
 from config.prompts import SYSTEM_PROMPT, ROAST_STYLES, MOCKERY_PASTAS
-from utils.cleaners import clean_transcript
+from utils.cleaners import clean_transcript, extract_final_response
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -91,19 +90,19 @@ async def handle_circle(message: Message):
             model="openai/gpt-oss-20b",
             temperature=0.7,
             top_p=0.9,
-            max_tokens=800,
+            max_tokens=1000,
         )
 
-        # Вытаскиваем content или рассуждения, если модель вернула текст туда
         choice_message = response.choices[0].message
-        reply_text = choice_message.content or getattr(choice_message, "reasoning", None) or ""
+        raw_reply = choice_message.content or getattr(choice_message, "reasoning", None) or ""
 
         logging.info(f"Сырой ответ модели: {choice_message}")
 
-        if not reply_text.strip():
+        reply_text = extract_final_response(raw_reply)
+        if not reply_text:
             reply_text = "Даже сказать нечего на этот высер."
 
-        await message.reply(reply_text.strip())
+        await message.reply(reply_text)
 
     except Exception as e:
         logging.error(f"Критическая ошибка обработки кружка: {e}", exc_info=True)

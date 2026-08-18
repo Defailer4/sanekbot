@@ -30,3 +30,21 @@ def clean_transcript(text: str) -> str:
             return ""
 
     return cleaned
+
+
+def extract_final_response(text: str) -> str:
+    if not text:
+        return ""
+
+    quotes = re.findall(r'["«]([^"»]+)["»]', text)
+    if quotes:
+        for q in reversed(quotes):
+            if re.search(r'[а-яА-ЯёЁ]', q) and len(q.strip()) > 10:
+                return q.strip()
+
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    for p in reversed(paragraphs):
+        if re.search(r'[а-яА-ЯёЁ]', p) and not p.lower().startswith(('we need', "let's", 'possible', 'draft', 'better:')):
+            return p.strip('"\n ')
+
+    return text.strip()
