@@ -6,7 +6,6 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message
 from groq import Groq
 
-# Импорты из наших новых модулей
 from config.settings import BOT_TOKEN, GROQ_API_KEY, TARGET_USER_IDS
 from config.prompts import SYSTEM_PROMPT, ROAST_STYLES, MOCKERY_PASTAS
 from utils.cleaners import clean_transcript
@@ -74,7 +73,7 @@ async def handle_circle(message: Message):
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt}
             ],
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             temperature=1.2,
             top_p=0.92,
             max_tokens=160,
