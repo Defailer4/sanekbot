@@ -12,7 +12,7 @@
 
 * **Язык:** Python 3.11+
 * **Фреймворк:** `aiogram 3.x` (Asyncio)
-* **AI & STT:** Groq API (`whisper-large-v3-turbo` + `llama-3.3-70b-versatile`)
+* **AI & STT:** Groq API (`whisper-large-v3-turbo` + `openai/gpt-oss-120b`)
 * **DevOps:** Docker, Docker Compose, Linux (Ubuntu VPS)
 * **Архитектура:** Модульная (разделение конфигов, утилит очистки и основной хэндлер-логики)
 
